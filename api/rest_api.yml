@@ -1,0 +1,1135 @@
+openapi: 3.0.4
+info:
+  title: Travel Social Network API
+  description: API for a travel-focused social network
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+servers:
+  - url: https://api.travel-social-network.com/v1
+    description: Production server
+
+tags:
+  - name: photo
+    description: Photo management
+  - name: post
+    description: Post management
+  - name: comment
+    description: Comment management
+  - name: like
+    description: Like/dislike management
+  - name: account
+    description: Account management
+  - name: notification
+    description: Notification management
+  - name: tag
+    description: Tag management
+  - name: location
+    description: Location management
+  - name: search
+    description: Search functionality
+
+paths:
+
+  # PHOTO
+  /photo:
+    post:
+      tags:
+        - photo
+      summary: Upload a photo
+      description: Upload a photo and receive a photo ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bytes
+              properties:
+                bytes:
+                  type: string
+                  format: byte
+                  description: Base64-encoded photo bytes
+      responses:
+        '201':
+          description: Photo uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - photoId
+                properties:
+                  photoId:
+                    type: integer
+                    example: 1
+  /photo/{photoId}/original:
+    get:
+      tags:
+        - photo
+      summary: Get original photo
+      description: Retrieve the original resolution photo
+      parameters:
+        - name: photoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Original photo
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+  /photo/{photoId}/feed:
+    get:
+      tags:
+        - photo
+      summary: Get photo optimized for feed
+      description: Retrieve a feed-optimized photo
+      parameters:
+        - name: photoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Feed-optimized photo
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+  /photo/{photoId}/thumb:
+    get:
+      tags:
+        - photo
+      summary: Get thumbnail photo
+      description: Retrieve a thumbnail photo
+      parameters:
+        - name: photoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Thumbnail photo
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+  /post/{postId}/photo:
+    get:
+      tags:
+        - photo
+      summary: Get photo IDs for a post
+      description: Retrieve the list of photo IDs associated with a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of photo IDs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  photoIds:
+                    type: array
+                    items:
+                      type: integer
+                    example: [1, 2, 3]
+
+  # POST
+  /post:
+    post:
+      tags:
+        - post
+      summary: Create a post
+      description: Create a new post with title, content, and photo IDs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCreateRequest'
+      responses:
+        '201':
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+    get:
+      tags:
+        - post
+      summary: Get posts feed
+      description: Retrieve a list of posts based on user's subscriptions
+      parameters:
+        - $ref: '#/components/parameters/LimitQuery'
+        - $ref: '#/components/parameters/OffsetQuery'
+      responses:
+        '200':
+          description: Posts feed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  posts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PostPreview'
+  /post/{postId}:
+    get:
+      tags:
+        - post
+      summary: Get a post
+      description: Retrieve details of a specific post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Post details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+    put:
+      tags:
+        - post
+      summary: Update a post
+      description: Update an existing post by ID
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostUpdateRequest'
+      responses:
+        '200':
+          description: Post updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+    delete:
+      tags:
+        - post
+      summary: Delete a post
+      description: Delete an existing post by ID
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Post deleted successfully
+  /post/{postId}/stats:
+    get:
+      tags:
+        - post
+      summary: Get post stats
+      description: Retrieve statistics for a specific post (for author)
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Post statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostStats'
+  /account/{accountId}/post:
+    get:
+      tags:
+        - post
+      summary: Get user's posts
+      description: Retrieve a list of posts created by a specific user
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - $ref: '#/components/parameters/LimitQuery'
+        - $ref: '#/components/parameters/OffsetQuery'
+      responses:
+        '200':
+          description: User's posts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  posts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PostPreview'
+  /post/search:
+    get:
+      tags:
+        - search
+      summary: Search posts
+      description: Search posts by query or coordinates
+      parameters:
+        - name: query
+          in: query
+          description: Search term
+          schema:
+            type: string
+        - name: lat
+          in: query
+          description: Latitude for location-based search
+          schema:
+            type: number
+            format: float
+        - name: lon
+          in: query
+          description: Longitude for location-based search
+          schema:
+            type: number
+            format: float
+        - $ref: '#/components/parameters/LimitQuery'
+        - $ref: '#/components/parameters/OffsetQuery'
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  posts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PostPreview'
+  /post/{postId}/complaint:
+    post:
+      tags:
+        - post
+      summary: Report a post
+      description: Submit a complaint about a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cause
+              properties:
+                cause:
+                  type: string
+                  example: spam
+      responses:
+        '204':
+          description: Complaint submitted successfully
+
+  # COMMENT
+  /post/{postId}/comment:
+    post:
+      tags:
+        - comment
+      summary: Create a comment
+      description: Add a comment to a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                  example: Great photo!
+      responses:
+        '201':
+          description: Comment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+    get:
+      tags:
+        - comment
+      summary: Get comments for a post
+      description: Retrieve a list of comments for a specific post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - $ref: '#/components/parameters/LimitQuery'
+        - $ref: '#/components/parameters/OffsetQuery'
+      responses:
+        '200':
+          description: Comments list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  comments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Comment'
+  /post/{postId}/comment/{commentId}:
+    get:
+      tags:
+        - comment
+      summary: Get a comment
+      description: Retrieve details of a specific comment
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Comment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+    put:
+      tags:
+        - comment
+      summary: Update a comment
+      description: Update an existing comment by ID
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                  example: Updated comment!
+      responses:
+        '200':
+          description: Comment updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+    delete:
+      tags:
+        - comment
+      summary: Delete a comment
+      description: Delete an existing comment by ID
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Comment deleted successfully
+  /post/{postId}/comment/{commentId}/complaint:
+    post:
+      tags:
+        - comment
+      summary: Report a comment
+      description: Submit a complaint about a comment
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+                  example: spam
+      responses:
+        '204':
+          description: Complaint submitted successfully
+
+  # LIKE
+  /post/{postId}/like:
+    post:
+      tags:
+        - like
+      summary: Like a post
+      description: Add a like to a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Post liked successfully
+  /post/{postId}/dislike:
+    post        - like
+    summary: Dislike a post
+    description: Add a dislike to a post
+    parameters:
+      - name: postId
+        in: path
+        required: true
+        schema:
+          type: integer
+    responses:
+      '204':
+        description: Post disliked successfully
+
+  # ACCOUNT
+  /account/{accountId}:
+    get:
+      tags:
+        - account
+      summary: Get account info
+      description: Retrieve profile information for a specific account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Account information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+  /account/{accountId}/liked-posts:
+    get:
+      tags:
+        - account
+      summary: Get user's liked posts
+      description: Retrieve a list of posts liked by a specific user
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - $ref: '#/components/parameters/LimitQuery'
+        - $ref: '#/components/parameters/OffsetQuery'
+      responses:
+        '200':
+          description: User's liked posts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  posts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LikedPost'
+  /account/{accountId}/subscribe:
+    post:
+      tags:
+        - account
+      summary: Subscribe to a user
+      description: Subscribe the current user to another account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Subscription created successfully
+    delete:
+      tags:
+        - account
+      summary: Unsubscribe from a user
+      description: Unsubscribe the current user from another account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Subscription removed successfully
+  /account/{accountId}/followers:
+    get:
+      tags:
+        - account
+      summary: Get account followers
+      description: Retrieve a list of users following a specific account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - $ref: '#/components/parameters/LimitQuery'
+        - $ref: '#/components/parameters/OffsetQuery'
+      responses:
+        '200':
+          description: Account followers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AccountPreview'
+  /account/{accountId}/following:
+    get:
+      tags:
+        - account
+      summary: Get account following
+      description: Retrieve a list of users that a specific account is following
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - $ref: '#/components/parameters/LimitQuery'
+        - $ref: '#/components/parameters/OffsetQuery'
+      responses:
+        '200':
+          description: Account following
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AccountPreview'
+  /account/search:
+    get:
+      tags:
+        - search
+      summary: Search accounts
+      description: Search for accounts by query term
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/LimitQuery'
+        - $ref: '#/components/parameters/OffsetQuery'
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AccountPreview'
+
+  # NOTIFICATION
+  /notifications:
+    get:
+      tags:
+        - notification
+      summary: Get user notifications
+      description: Retrieve a list of notifications for the current user
+      parameters:
+        - $ref: '#/components/parameters/LimitQuery'
+        - $ref: '#/components/parameters/OffsetQuery'
+      responses:
+        '200':
+          description: Notifications list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notifications:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+  /notifications/{notificationId}/mark-as-read:
+    post:
+      tags:
+        - notification
+      summary: Mark notification as read
+      description: Mark a specific notification as read
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Notification marked as read successfully
+
+  # TAG
+  /tags/popular:
+    get:
+      tags:
+        - tag
+      summary: Get popular tags
+      description: Retrieve a list of popular tags
+      parameters:
+        - $ref: '#/components/parameters/LimitQuery'
+        - $ref: '#/components/parameters/OffsetQuery'
+      responses:
+        '200':
+          description: Popular tags
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tags:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Tag'
+  /tag/{tagName}/posts:
+    get:
+      tags:
+        - tag
+      summary: Get posts by tag
+      description: Retrieve a list of posts associated with a specific tag
+      parameters:
+        - name: tagName
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/LimitQuery'
+        - $ref: '#/components/parameters/OffsetQuery'
+      responses:
+        '200':
+          description: Posts by tag
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  posts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PostPreview'
+
+  # LOCATION
+  /locations/popular:
+    get:
+      tags:
+        - location
+      summary: Get popular locations
+      description: Retrieve a list of popular locations based on post count
+      parameters:
+        - $ref: '#/components/parameters/LimitQuery'
+        - $ref: '#/components/parameters/OffsetQuery'
+      responses:
+        '200':
+          description: Popular locations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  locations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Location'
+
+components:
+  schemas:
+    PostCreateRequest:
+      type: object
+      required:
+        - title
+        - content
+        - photoIds
+      properties:
+        title:
+          type: string
+          example: Trip to Paris
+        content:
+          type: string
+          example: Amazing city!
+        photoIds:
+          type: array
+          items:
+            type: integer
+          example: [1, 2, 3]
+    PostUpdateRequest:
+      type: object
+      required:
+        - title
+        - content
+        - photoIds
+      properties:
+        title:
+          type: string
+          example: Trip to Paris
+        content:
+          type: string
+          example: Amazing city! (Updated)
+        photoIds:
+          type: array
+          items:
+            type: integer
+          example: [1, 2, 3]
+    Post:
+      type: object
+      required:
+        - id
+        - author
+        - authorId
+        - title
+        - fullContent
+        - likeCount
+        - commentCount
+        - photoIds
+        - createdAt
+      properties:
+        id:
+          type: integer
+          example: 1
+        author:
+          type: string
+          example: john_doe
+        authorId:
+          example: 2
+        title:
+          type: string
+          example: Trip to Paris
+        fullContent:
+          type: string
+          example: Amazing city!
+        likeCount:
+          type: integer
+          example: 10
+        commentCount:
+          type: integer
+          example: 2
+        photoIds:
+          type: array
+          items:
+            type: integer
+          example: [1, 2]
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-03-10T10:00:00Z"
+    PostPreview:
+      type: object
+      required:
+        - id
+        - author
+        - authorId
+        - title
+        - headerContent
+        - likeCount
+        - commentCount
+        - photoIds
+      properties:
+        id:
+          type: integer
+          example: 1
+        author:
+          type: string
+          example: john_doe
+        authorId:
+          type: integer
+          example: 2
+        title:
+          type: string
+          example: Trip to Paris
+        headerContent:
+          type: string
+          example: Amazing city!
+        likeCount:
+          type: integer
+          example: 10
+        commentCount:
+          type: integer
+          example: 2
+        photoIds:
+          type: array
+          items:
+            type: integer
+          example: [1, 2]
+    PostStats:
+      type: object
+      required:
+        - views
+        - likes
+        - comments
+        - shares
+      properties:
+        views:
+          type: integer
+          example: 1250
+        likes:
+          type: integer
+          example: 120
+        comments:
+          type: integer
+          example: 25
+        shares:
+          type: integer
+          example: 5
+    Comment:
+      type: object
+      required:
+        - id
+        - author
+        - content
+        - createdAt
+      properties:
+        id:
+          type: integer
+          example: 1
+        author:
+          type: string
+          example: user1
+        content:
+          type: string
+          example: Great shot!
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-03-10T10:00:00Z"
+    Account:
+      type: object
+      required:
+        - id
+        - name
+        - info
+        - postCount
+        - followerCount
+        - followingCount
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: john_doe
+        info:
+          type: string
+          example: Travel enthusiast
+        avatarId:
+          type: integer
+          example: 1
+        postCount:
+          type: integer
+          example: 120
+        followerCount:
+          type: integer
+          example: 100
+        followingCount:
+          type: integer
+          example: 25
+    AccountPreview:
+      type: object
+      required:
+        - id
+        - name
+        - postCount
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: john_doe
+        postCount:
+          type: integer
+          example: 120
+        avatarId:
+          type: integer
+          example: 1
+    LikedPost:
+      type: object
+      required:
+        - postId
+        - author
+        - title
+        - likeDate
+      properties:
+        postId:
+          type: integer
+          example: 50
+        author:
+          type: string
+          example: another_user
+        title string
+        example: Sunset in Bali
+        likeDate:
+          type: string
+          format: date-time
+          example: "2026-03-09T15:00:00Z"
+    Notification:
+      type: object
+      required:
+        - id
+        - type
+        - fromUser
+        - postId
+        - read
+        - timestamp
+      properties:
+        id:
+          type: integer
+          example: 1
+        type:
+          type: string
+          enum: [like, comment]
+          example: like
+        fromUser:
+          type: string
+          example: user_123
+        postId:
+          type: integer
+          example: 456
+        commentId:
+          type: integer
+          example: 789
+        read:
+          type: boolean
+          example: false
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-03-10T09:00:00Z"
+    Tag:
+      type: object
+      required:
+        - name
+        - postCount
+      properties:
+        name:
+          type: string
+          example: sunset
+        postCount:
+          type: integer
+          example: 5000
+    Location:
+      type: object
+      required:
+        - name
+        - lat
+        - lng
+        - postCount
+      properties:
+        name:
+          type: string
+          example: Eiffel Tower
+        lat:
+          type: number
+          format: float
+          example: 48.8584
+        lng:
+          type: number
+          format: float
+          example: 2.2945
+        postCount:
+          type: integer
+          example: 1500
+  parameters:
+    LimitQuery:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 20
+    OffsetQuery:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        default: 0
+
+security:
+  - bearerAuth: []
